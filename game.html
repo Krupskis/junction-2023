@@ -20,7 +20,6 @@
 
     <video id="webcam" autoplay></video>
     <canvas id="canvas"></canvas>
-    <div id="status"></div>
     <div id="score"></div>
 
 
@@ -59,7 +58,6 @@
                 canvas.style.height = '100vh';
             }
             
-            const status = document.getElementById('status');
             const canvas = document.getElementById('canvas');
             canvas.width = video.videoWidth;
             canvas.height = 500;
@@ -176,23 +174,16 @@
 
             // Check if status element is defined
             const status = document.getElementById('status');
-            if (status) {
-                if (outside) {
-                    status.innerHTML = "Outside";
-                    
-                    isChangingPreset = true;
-                    // Change preset after a delay
-                    if (!delayActive) {
-                        delayActive = true;
-                        score++;
-                        setTimeout(() => changePreset(video, canvas, ctx), 1000);
-                    }
-                    //currentPreset = getRectangle(video, canvas, ctx);
-                } else {
-                    status.innerHTML = "Inside";
+            if (outside) {
+                status.innerHTML = "Outside";
+                
+                isChangingPreset = true;
+                // Change preset after a delay
+                if (!delayActive) {
+                    delayActive = true;
+                    score++;
+                    setTimeout(() => changePreset(video, canvas, ctx), 1000);
                 }
-            } else {
-                console.error("Status element is not defined.");
             }
 
             requestAnimationFrame(() => detect(net, video, canvas, ctx));
