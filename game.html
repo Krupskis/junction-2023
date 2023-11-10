@@ -29,6 +29,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
     <script>
         let score = 0;
+        let currentPreset = null; // Global variable to store current preset
+        let isChangingPreset = false; // Flag to check if preset is changing
+        let delayActive = false; // Flag to indicate if the delay is currently active
+
+
         async function setupWebcam() {
             const video = document.getElementById('webcam');
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -70,6 +75,20 @@
 
         function isOutside(data, rectX, rectY, rectWidth, rectHeight) {
             let isOutside = true;
+            let empty = true;
+            
+            // if all data[i] == 0, then it is inside
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] == 1) {
+                    empty = false;
+                    break;
+                }
+            }
+
+            if (empty) {
+                return false;
+            }
+
             for (let i = 0; i < data.length; i++) {
                 if (data[i] == 1) {
                     let x = i % 640;
@@ -77,7 +96,6 @@
 
                     if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight) {
                         isOutside = false;
-                        console.log("yes");
                         break;
                     }
                 }
@@ -90,9 +108,7 @@
             // Set rectangle properties (change these values as needed)
             const dividerPosition = canvas.width / 2;
             const {x, y, width, height} = getRectangle(video, canvas, ctx);
-            console.log(x, y, width, height)
             
-            // draw a rectangle of x, y, z, w give it red color;
             ctx.fillStyle = 'green';
             ctx.fillRect(x, y, width, height);
 
@@ -131,7 +147,7 @@
 
             // randomly sample from presets
             const randomIndex = Math.floor(Math.random() * presets.length);
-            return presets[1];
+            return presets[randomIndex];
         }
 
         async function detect(net, video, canvas, ctx) {
@@ -144,11 +160,18 @@
             
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+            if (!currentPreset) {
+                currentPreset = getRectangle(video, canvas, ctx);
+            }
+            
+            const { x, y, width, height } = currentPreset;
             ctx.globalAlpha = 0.5;
-            const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
+            ctx.fillStyle = isChangingPreset ? 'green' : 'red';
+            ctx.fillRect(x, y, width, height);
             ctx.globalAlpha = 1;
 
-            console.log(x, y, width, height);
+            drawScore(ctx, score, canvas);
+
             const outside = isOutside(segmentation.data, x, y, width, height);
 
             // Check if status element is defined
@@ -156,8 +179,15 @@
             if (status) {
                 if (outside) {
                     status.innerHTML = "Outside";
-                    score++;
-                    document.getElementById('score').innerHTML = score;
+                    
+                    isChangingPreset = true;
+                    // Change preset after a delay
+                    if (!delayActive) {
+                        delayActive = true;
+                        score++;
+                        setTimeout(() => changePreset(video, canvas, ctx), 1000);
+                    }
+                    //currentPreset = getRectangle(video, canvas, ctx);
                 } else {
                     status.innerHTML = "Inside";
                 }
@@ -166,6 +196,24 @@
             }
 
             requestAnimationFrame(() => detect(net, video, canvas, ctx));
+        }
+
+        function changePreset(video, canvas, ctx) {
+            currentPreset = getRectangle(video, canvas, ctx);
+            isChangingPreset = false; // Reset the flag
+            delayActive = false; // Reset the delay flag
+        }
+
+        function drawScore(ctx, score, canvas) {
+            ctx.font = '40px Ambit'; // You can change the font size and style as needed
+            ctx.fillStyle = 'white'; // Set the text color
+
+            const text = score;
+            const textWidth = ctx.measureText(text).width;
+            const x = (canvas.width - textWidth) / 2; // Calculate x coordinate for centered text
+            const y = 50; // You can adjust the y coordinate as needed
+
+            ctx.fillText(text, x, y); // Draw the centered text
         }
 
         main();
