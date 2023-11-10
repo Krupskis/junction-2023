@@ -65,9 +65,6 @@
             
             const net = await loadBodyPix();
 
-            //const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
-            // console.log(x, y, width, height);
-            // detect(net, video, canvas, ctx, x, y, width, height);
             detect(net, video, canvas, ctx);
         }
 
@@ -92,7 +89,9 @@
                     let x = i % 640;
                     let y = Math.floor(i / 640);
 
-                    if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight) {
+                    
+
+                    if (isInsideRectangle(x, y, rectX, rectY, rectWidth, rectHeight)) {
                         isOutside = false;
                         break;
                     }
@@ -102,15 +101,8 @@
             return isOutside;
         }
 
-        async function drawRandomRectangle(video, canvas, ctx) {
-            // Set rectangle properties (change these values as needed)
-            const dividerPosition = canvas.width / 2;
-            const {x, y, width, height} = getRectangle(video, canvas, ctx);
-            
-            ctx.fillStyle = 'green';
-            ctx.fillRect(x, y, width, height);
-
-            return { x, y, width, height };
+        function isInsideRectangle(x, y, rectX, rectY, rectWidth, rectHeight) {
+            return x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight;
         }
 
         function getRectangle(video, canvas, ctx) {
@@ -173,10 +165,7 @@
             const outside = isOutside(segmentation.data, x, y, width, height);
 
             // Check if status element is defined
-            const status = document.getElementById('status');
-            if (outside) {
-                status.innerHTML = "Outside";
-                
+            if (outside) {                
                 isChangingPreset = true;
                 // Change preset after a delay
                 if (!delayActive) {
