@@ -62,7 +62,7 @@
             
             const net = await loadBodyPix();
 
-            // const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
+            //const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
             // console.log(x, y, width, height);
             // detect(net, video, canvas, ctx, x, y, width, height);
             detect(net, video, canvas, ctx);
@@ -131,7 +131,7 @@
 
             // randomly sample from presets
             const randomIndex = Math.floor(Math.random() * presets.length);
-            return presets[randomIndex];
+            return presets[1];
         }
 
         async function detect(net, video, canvas, ctx) {
@@ -145,8 +145,10 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
             ctx.globalAlpha = 0.5;
+            const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
             ctx.globalAlpha = 1;
 
+            console.log(x, y, width, height);
             const outside = isOutside(segmentation.data, x, y, width, height);
 
             // Check if status element is defined
@@ -156,7 +158,6 @@
                     status.innerHTML = "Outside";
                     score++;
                     document.getElementById('score').innerHTML = score;
-                    const { x, y, width, height } = await drawRandomRectangle(video, canvas, ctx);
                 } else {
                     status.innerHTML = "Inside";
                 }
@@ -164,11 +165,6 @@
                 console.error("Status element is not defined.");
             }
 
-
-            // bodyPix.drawMask(
-            //     canvas, video, coloredPartImage, opacity, maskBlurAmount, flipHorizontal
-            // );
-            // Continue the loop
             requestAnimationFrame(() => detect(net, video, canvas, ctx));
         }
 
