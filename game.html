@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Game</title>
+    <style>
+        #webcam {
+            display: none;
+        }
+
+        #canvas {
+            border: 2px solid black;
+        }
+    </style>
+</head>
+
+<body>
+
+    <video id="webcam" autoplay></video>
+    <canvas id="canvas"></canvas>
+    <div id="status"></div>
+    <div id="score"></div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <script>
+        let score = 0;
+        async function setupWebcam() {
+            const video = document.getElementById('webcam');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    resolve(video);
+                };
+            });
+        }
+
+        async function loadBodyPix() {
+            return await bodyPix.load();
+        }
+
+        async function main() {
+            const video = await setupWebcam();
+            video.play();
+
+            if (video.videoHeight > video.videoWidth) {
+                canvas.style.width = 'auto';
+                canvas.style.height = '100vh';
+            }
+            
+            const status = document.getElementById('status');
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+            
+            const net = await loadBodyPix();
+
+            // const {x, y, width, height} = await drawRandomRectangle(video, canvas, ctx);
+            // console.log(x, y, width, height);
+            // detect(net, video, canvas, ctx, x, y, width, height);
+            detect(net, video, canvas, ctx);
+        }
+
+        function isOutside(data, rectX, rectY, rectWidth, rectHeight) {
+            let isOutside = true;
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] == 1) {
+                    let x = i % 640;
+                    let y = Math.floor(i / 640);
+
+                    if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight) {
+                        isOutside = false;
+                        console.log("yes");
+                        break;
+                    }
+                }
+            }
+
+            return isOutside;
+        }
+
+        async function drawRandomRectangle(video, canvas, ctx) {
+            // Set rectangle properties (change these values as needed)
+            const dividerPosition = canvas.width / 2;
+            const {x, y, width, height} = getRectangle(video, canvas, ctx);
+            console.log(x, y, width, height)
+            
+            // draw a rectangle of x, y, z, w give it red color;
+            ctx.fillStyle = 'green';
+            ctx.fillRect(x, y, width, height);
+
+            return { x, y, width, height };
+        }
+
+        function getRectangle(video, canvas, ctx) {
+            // Draw a vertical line as the divider
+            let x, y, width, height;
+            presets = [
+                { // jump
+                    x: 0,
+                    y: canvas.height - canvas.height / 4,
+                    width: canvas.width,
+                    height: canvas.height / 4
+                },
+                { // duck
+                    x: 0,
+                    y: 0,
+                    width: canvas.width,
+                    height: canvas.height / 4
+                },
+                { // left
+                    x: 0,
+                    y: 0,
+                    width: canvas.width / 2,
+                    height: canvas.height
+                },
+                { // right
+                    x: canvas.width / 2,
+                    y: 0,
+                    width: canvas.width / 2,
+                    height: canvas.height
+                },
+            ];
+
+            // randomly sample from presets
+            const randomIndex = Math.floor(Math.random() * presets.length);
+            return presets[randomIndex];
+        }
+
+        async function detect(net, video, canvas, ctx) {
+            const segmentation = await net.segmentPerson(video);
+            const coloredPartImage = bodyPix.toColoredPartMask(segmentation);
+            
+            const opacity = 0;
+            const maskBlurAmount = 0;
+            const flipHorizontal = false;
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 1;
+
+            const outside = isOutside(segmentation.data, x, y, width, height);
+
+            // Check if status element is defined
+            const status = document.getElementById('status');
+            if (status) {
+                if (outside) {
+                    status.innerHTML = "Outside";
+                    score++;
+                    document.getElementById('score').innerHTML = score;
+                    const { x, y, width, height } = await drawRandomRectangle(video, canvas, ctx);
+                } else {
+                    status.innerHTML = "Inside";
+                }
+            } else {
+                console.error("Status element is not defined.");
+            }
+
+
+            // bodyPix.drawMask(
+            //     canvas, video, coloredPartImage, opacity, maskBlurAmount, flipHorizontal
+            // );
+            // Continue the loop
+            requestAnimationFrame(() => detect(net, video, canvas, ctx));
+        }
+
+        main();
+    </script>
+</body>
+
+</html>
