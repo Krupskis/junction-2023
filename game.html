@@ -90,9 +90,8 @@
         let currentPreset = null; // Global variable to store current preset
         let isChangingPreset = false; // Flag to check if preset is changing
         let delayActive = false; // Flag to indicate if the delay is currently active
-        let countdown = 5; // 60 seconds for the countdown
         let gameActive = true; // Flag to check if the game is active
-        let delay = 100; // 1 second delay
+        let delay = 1000; // 1 second delay
         let lastPresetIndex = null; // Global variable to store the last move's index
         let animationFrameId; // Declare this at the top of your script
 
@@ -327,7 +326,6 @@
         function endGame(ctx, score, canvas) {
             console.log('Ending game'); // Log to confirm this function is called
             gameActive = false; // Stop the game loop
-            countdown = 0; // Reset the countdown
 
             // Ensure the canvas is visible
             canvas.style.display = 'block';
