@@ -21,24 +21,24 @@
             justify-content: center;
             white-space: nowrap;
             max-width: 300px;
-            font-family: 'Inter', sans-serif; /* Replace with your font */
-            border-radius: 9999px; /* represents 'rounded-full' */
-            font-size: 1rem; /* represents 'text-sm' */
-            font-weight: 500; /* represents 'font-medium' */
-            padding: 0.5rem 1rem; /* default size 'sm' */
-            background-color: #6941c6; /* Example color, replace with your brand color */
-            color: white; /* Example color, replace with appropriate color */
+            font-family: 'Inter', sans-serif;
+            border-radius: 9999px;
+            font-size: 1rem; 
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            background-color: #6941c6; 
+            color: white;
             transition: all 0.2s ease-in-out;
             outline: none;
-            border: 2px solid transparent; /* Transparent border to maintain layout */
+            border: 2px solid transparent;
         }
 
         .primary-button:hover {
-            background-color: #53389e; /* Darker shade for hover, replace as needed */
+            background-color: #53389e;
         } 
 
         .primary-button:focus-visible {
-            outline: 2px solid #53389e; /* Focus ring color, adjust as needed */
+            outline: 2px solid #53389e;
         }
 
         .primary-button:disabled {
@@ -47,19 +47,19 @@
         }
 
         .countdown-container {
-            width: 100%; /* Full width of the container */
-            background-color: #e0e0e0; /* Light grey background */
+            width: 100%;
+            background-color: #e0e0e0;
             padding: 3px;
             box-sizing: border-box;
-            border-radius: 5px; /* Slightly rounded corners */
+            border-radius: 5px;
         }
 
         .countdown-bar {
-            height: 20px; /* Height of the bar */
-            background-color: #9e77ed; /* Green color */
-            width: 100%; /* Full width to start with */
-            border-radius: 5px; /* Slightly rounded corners */
-            transition: width 1s linear; /* Smooth transition for width change */
+            height: 20px;
+            background-color: #9e77ed;
+            width: 100%; 
+            border-radius: 5px;
+            transition: width 1s linear;
         }
     </style>
 </head>
@@ -81,11 +81,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
     <script>
         let score = 0;
-        let currentPreset = null; // Global variable to store current preset
-        let isChangingPreset = false; // Flag to check if preset is changing
-        let delayActive = false; // Flag to indicate if the delay is currently active
-        let countdown = 30; // 60 seconds for the countdown
-        let gameActive = true; // Flag to check if the game is active
+        let currentPreset = null;
+        let isChangingPreset = false;
+        let delayActive = false;
+        let countdown = 30; 
+        let gameActive = true; 
 
 
         async function setupWebcam() {
@@ -127,37 +127,32 @@
 
         function startGame(net, video, canvas, ctx) {
             const countdownBar = document.getElementById('countdown-bar');
-            let timeLeft = 30; // Total time in seconds
-            let originalWidth = 100; // Original width in percentage
+            let timeLeft = 30;
+            let originalWidth = 100;
 
             const countdownInterva = setInterval(() => {
                 timeLeft--;
-                let newWidth = (timeLeft / 30) * 100; // Calculate new width as a percentage
-                countdownBar.style.width = newWidth + '%'; // Apply new width
+                let newWidth = (timeLeft / 30) * 100;
+                countdownBar.style.width = newWidth + '%'; 
 
                 if (timeLeft <= 0) {
-                    clearInterval(countdownInterval); // Clear interval if time is up
-                    countdownBar.style.width = '0%'; // Set width to 0%
+                    clearInterval(countdownInterval);
+                    countdownBar.style.width = '0%'; 
                 }
-            }, 1000); // Update every second
+            }, 1000); 
 
-            // Hide the start button
-            console.log("start game")
             document.getElementById('startButton').style.display = 'none';
 
-            // Start the game detection
             detect(net, video, canvas, ctx);
         }
 
         function endGame() {
-            gameActive = false; // Stop the game
-            countdown = 0; // Set countdown to 0
+            gameActive = false;
+            countdown = 0; 
             score = 0;
-            document.getElementById('startButton').style.display = 'block'; // Show the start button
-            // Additional logic to handle end of game (e.g., display a message, stop drawing on canvas, etc.)
+            document.getElementById('startButton').style.display = 'block';
         }
 
-        // Method returns true if the person is outside the rectangle, meaning the person gets a point.
         function isOutside(data, rect) {
             let isOutside = true;
             let empty = true;
@@ -168,12 +163,10 @@
                     break;
                 }
             }
-            // if all data[i] == 0, then it is inside, otherwise people can trick it.
             if (empty) {
                 return false;
             }
 
-            // Simple algorithm to check if the person pixels overlap with rectangle pixels.
             for (let i = 0; i < data.length; i++) {
                 if (data[i] == 1) {
                     let x = i % 640;
@@ -194,45 +187,31 @@
             return isOutside;
         }
 
-        // Method returns true if the point (x, y) is inside the rectangle.
         function isInsideRectangle(x, y, rectX, rectY, rectWidth, rectHeight) {
             return x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight;
         }
 
-        // Method returns a random rectangle from the presets.
         function getRectangle(video, canvas, ctx) {
             presets = [
-                [ // duck
+                [
                     { x: 0, y: 0, width: canvas.width, height: canvas.height / 4 }
                 ],
-                [ // jump
+                [
                     { x: 0, y: canvas.height - canvas.height / 4, width: canvas.width, height: canvas.height / 4 }
                 ],
-                [ // left
+                [
                     { x: 0, y: 0, width: canvas.width / 2, height: canvas.height }
                 ],
-                [ // right
+                [
                    { x: canvas.width / 2, y: 0, width: canvas.width / 2, height: canvas.height }
                 ],
-                // // Exclude top-left corner (these might make sense to include after some certain score to make it harder)
-                // [
-                //     { x: canvas.width / 2, y: 0, width: canvas.width / 2, height: canvas.height }, // top right
-                //     { x: 0, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 }  // bottom left
-                // ],
-                // Exclude bottom-left corner
                 [
-                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 }, // top left
-                    { x: canvas.width / 2, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 } // bottom right
+                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 },
+                    { x: canvas.width / 2, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 } 
                 ],
-                // // Exclude top-right corner (these might make sense to include after some certain score to make it harder)
-                // [
-                //     { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 }, // top left
-                //     { x: canvas.width / 2, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 } // bottom right
-                // ],
-                // Exclude bottom-right corner
                 [
-                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 }, // top right
-                    { x: 0, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 } // bottom left
+                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 },
+                    { x: 0, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 } 
                 ]
             ]
 
@@ -268,11 +247,8 @@
 
             const outside = isOutside(segmentation.data, currentPreset);
 
-            // Check if status element is defined
             if (outside) {                
                 isChangingPreset = true;
-                // Change preset after a delay and increase score immediately
-                // Modify this if statement to adjust behavior after user correctly moves out of the rectangle
                 if (!delayActive) {
                     delayActive = true;
                     score++;
@@ -287,20 +263,20 @@
 
         function changePreset(video, canvas, ctx) {
             currentPreset = getRectangle(video, canvas, ctx);
-            isChangingPreset = false; // Reset the flag
-            delayActive = false; // Reset the delay flag
+            isChangingPreset = false; 
+            delayActive = false;
         }
 
         function drawScore(ctx, score, canvas) {
-            ctx.font = '40px Ambit'; // You can change the font size and style as needed
-            ctx.fillStyle = 'white'; // Set the text color
+            ctx.font = '40px Ambit'; 
+            ctx.fillStyle = 'white'; 
 
             const text = score;
             const textWidth = ctx.measureText(text).width;
-            const x = (canvas.width - textWidth) / 2; // Calculate x coordinate for centered text
-            const y = 50; // You can adjust the y coordinate as needed
+            const x = (canvas.width - textWidth) / 2;
+            const y = 50; 
 
-            ctx.fillText(text, x, y); // Draw the centered text
+            ctx.fillText(text, x, y); 
         }
 
         main();
