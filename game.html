@@ -11,16 +11,71 @@
         }
 
         #canvas {
-            border: 2px solid black;
+            background-color: white;
+        }
+
+        .primary-button {
+            display: inline-flex;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            max-width: 300px;
+            font-family: 'Inter', sans-serif; /* Replace with your font */
+            border-radius: 9999px; /* represents 'rounded-full' */
+            font-size: 1rem; /* represents 'text-sm' */
+            font-weight: 500; /* represents 'font-medium' */
+            padding: 0.5rem 1rem; /* default size 'sm' */
+            background-color: #6941c6; /* Example color, replace with your brand color */
+            color: white; /* Example color, replace with appropriate color */
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            border: 2px solid transparent; /* Transparent border to maintain layout */
+        }
+
+        .primary-button:hover {
+            background-color: #53389e; /* Darker shade for hover, replace as needed */
+        } 
+
+        .primary-button:focus-visible {
+            outline: 2px solid #53389e; /* Focus ring color, adjust as needed */
+        }
+
+        .primary-button:disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .countdown-container {
+            width: 100%; /* Full width of the container */
+            background-color: #e0e0e0; /* Light grey background */
+            padding: 3px;
+            box-sizing: border-box;
+            border-radius: 5px; /* Slightly rounded corners */
+        }
+
+        .countdown-bar {
+            height: 20px; /* Height of the bar */
+            background-color: #9e77ed; /* Green color */
+            width: 100%; /* Full width to start with */
+            border-radius: 5px; /* Slightly rounded corners */
+            transition: width 1s linear; /* Smooth transition for width change */
         }
     </style>
 </head>
 
-<body>
-    <button id="startButton">Start Game</button>
-    <span id="countdownTimer">60</span>
-    <video id="webcam" autoplay></video>
-    <canvas id="canvas"></canvas>
+<body style="background-color:#F4F6FA;">
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;">
+        <video id="webcam" autoplay></video>
+        <canvas id="canvas">
+                    <span id="countdownTimer">60</span>
+
+        </canvas>
+        <button class="primary-button" id="startButton">Start Game</button>
+        <div class="countdown-container">
+            <div class="countdown-bar" id="countdown-bar"></div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
@@ -29,7 +84,7 @@
         let currentPreset = null; // Global variable to store current preset
         let isChangingPreset = false; // Flag to check if preset is changing
         let delayActive = false; // Flag to indicate if the delay is currently active
-        let countdown = 60; // 60 seconds for the countdown
+        let countdown = 30; // 60 seconds for the countdown
         let gameActive = true; // Flag to check if the game is active
 
 
@@ -71,22 +126,24 @@
         }
 
         function startGame(net, video, canvas, ctx) {
-            // Hide the start button
-            document.getElementById('startButton').style.display = 'none';
+            const countdownBar = document.getElementById('countdown-bar');
+            let timeLeft = 30; // Total time in seconds
+            let originalWidth = 100; // Original width in percentage
 
-            // Start the countdown
-            countdown = 30; // Reset the countdown to 30 seconds
-            gameActive = true;
-            const countdownInterval = setInterval(() => {
-                if (gameActive) {
-                    countdown--;
-                    document.getElementById('countdownTimer').innerText = countdown;
-                    if (countdown <= 0) {
-                        clearInterval(countdownInterval);
-                        endGame();
-                    }
+            const countdownInterva = setInterval(() => {
+                timeLeft--;
+                let newWidth = (timeLeft / 30) * 100; // Calculate new width as a percentage
+                countdownBar.style.width = newWidth + '%'; // Apply new width
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval); // Clear interval if time is up
+                    countdownBar.style.width = '0%'; // Set width to 0%
                 }
-            }, 1000);
+            }, 1000); // Update every second
+
+            // Hide the start button
+            console.log("start game")
+            document.getElementById('startButton').style.display = 'none';
 
             // Start the game detection
             detect(net, video, canvas, ctx);
@@ -150,6 +207,12 @@
                 ],
                 [ // jump
                     { x: 0, y: canvas.height - canvas.height / 4, width: canvas.width, height: canvas.height / 4 }
+                ],
+                [ // left
+                    { x: 0, y: 0, width: canvas.width / 2, height: canvas.height }
+                ],
+                [ // right
+                   { x: canvas.width / 2, y: 0, width: canvas.width / 2, height: canvas.height }
                 ],
                 // // Exclude top-left corner (these might make sense to include after some certain score to make it harder)
                 // [
