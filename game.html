@@ -7,12 +7,30 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
     <title>Webcam Game</title>
     <style>
+        #video-container {
+        height: vh;
+        aspect-ratio: 9/16;
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
         #webcam {
+                        position: absolute;
             display: none;
+        /* Adjust height and width to ensure it covers the container */
+        min-width: 100%;
+        min-height: 100%;
         }
 
         #canvas {
+                        object-fit: cover;
+
             background-color: white;
+            border-radius: 10px;
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
             -webkit-transform: scaleX(-1);
             transform: scaleX(-1);
         }
@@ -51,6 +69,9 @@
 
         .countdown-container {
             width: 100%; /* Full width of the container */
+            display: none;
+            width: 450px;
+            max-width: 100%;
             background-color: #e0e0e0; /* Light grey background */
             padding: 3px;
             box-sizing: border-box;
@@ -68,18 +89,22 @@
 </head>
 
 <body style="background-color:#F4F6FA;">
-    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px;">
-        <video id="webcam" autoplay></video>
-        <canvas id="canvas">
-                    <span id="countdownTimer">60</span>
+    <div style="display: flex; height: 100vh; flex-direction: column; justify-content: center; align-items: center; gap: 10px;">
+          <div id="video-container">
 
-        </canvas>
+                <video id="webcam" autoplay></video>
+
+                <canvas id="canvas">
+                
+                </canvas>
+            </div>
+        <div id="countdownContainer" class="countdown-container">
+            <div class="countdown-bar" id="countdown-bar"></div>
+        </div>
         <div id="endScreen" style="display: none; text-align: center;">
         </div>
         <button class="primary-button" id="startButton">Start Game</button>
-        <div class="countdown-container">
-            <div class="countdown-bar" id="countdown-bar"></div>
-        </div>
+        
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -103,6 +128,9 @@
 
             return new Promise((resolve) => {
                 video.onloadedmetadata = () => {
+                    // const canvas = document.getElementById('canvas');
+                    // canvas.width = video.videoWidth;
+                    // canvas.height = video.videoHeight;
                     resolve(video);
                 };
             });
@@ -116,14 +144,15 @@
             const video = await setupWebcam();
             video.play();
 
-            if (video.videoHeight > video.videoWidth) {
-                canvas.style.width = 'auto';
-                canvas.style.height = '100vh';
-            }
+            // if (video.videoHeight > video.videoWidth) {
+            //     canvas.style.width = 'auto';
+            //     canvas.style.height = '100vh';
+            // }
             
             const canvas = document.getElementById('canvas');
+
             canvas.width = video.videoWidth;
-            canvas.height = 500;
+            canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
             
             const net = await loadBodyPix();
@@ -134,7 +163,9 @@
         }
 
         function startGame(net, video, canvas, ctx) {
+            document.getElementById('countdownContainer').style.display = 'block';
             const countdownBar = document.getElementById('countdown-bar');
+            // Change countdown display to block
             let timeLeft = gameLength; // Total time in seconds
             let originalWidth = 100; // Original width in percentage
 
@@ -269,10 +300,10 @@
                 currentPreset = getRectangle(video, canvas, ctx);
             }
             
-            ctx.globalAlpha = 0.5;
+            ctx.globalAlpha = 0.7;
             for (let i = 0; i < currentPreset.length; i++) {
                 const { x, y, width, height } = currentPreset[i];
-                ctx.fillStyle = isChangingPreset ? 'green' : 'red';
+                ctx.fillStyle = isChangingPreset ? '#98FB98' : '#FF6961';
                 ctx.fillRect(x, y, width, height);
             }
             
