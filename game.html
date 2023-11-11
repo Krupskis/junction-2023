@@ -12,6 +12,8 @@
 
         #canvas {
             background-color: white;
+            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1);
         }
 
         .primary-button {
@@ -86,6 +88,8 @@
         let delayActive = false; // Flag to indicate if the delay is currently active
         let countdown = 30; // 60 seconds for the countdown
         let gameActive = true; // Flag to check if the game is active
+        let delay = 500; // 0.5 second delay
+        let lastPresetIndex = null; // Global variable to store the last move's index
 
 
         async function setupWebcam() {
@@ -237,7 +241,12 @@
             ]
 
             // randomly sample from presets
-            const randomIndex = Math.floor(Math.random() * presets.length);
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * presets.length);
+            } while (randomIndex === lastPresetIndex); // Repeat until a new, different move is selected
+            
+            lastPresetIndex = randomIndex; // Update the last move index
             return presets[randomIndex];
         }
 
@@ -276,7 +285,7 @@
                 if (!delayActive) {
                     delayActive = true;
                     score++;
-                    setTimeout(() => changePreset(video, canvas, ctx), 1000);
+                    setTimeout(() => changePreset(video, canvas, ctx), delay);
                 }
             }
 
