@@ -88,7 +88,7 @@
         let delayActive = false; // Flag to indicate if the delay is currently active
         let countdown = 30; // 60 seconds for the countdown
         let gameActive = true; // Flag to check if the game is active
-        let delay = 500; // 0.5 second delay
+        let delay = 100; // 1 second delay
         let lastPresetIndex = null; // Global variable to store the last move's index
 
 
@@ -301,15 +301,21 @@
         }
 
         function drawScore(ctx, score, canvas) {
-            ctx.font = '40px Ambit'; // You can change the font size and style as needed
-            ctx.fillStyle = 'white'; // Set the text color
+            ctx.save(); // Save the current state of the context
+                ctx.scale(-1, 1); // Flip context horizontally
 
-            const text = score;
-            const textWidth = ctx.measureText(text).width;
-            const x = (canvas.width - textWidth) / 2; // Calculate x coordinate for centered text
-            const y = 50; // You can adjust the y coordinate as needed
+                // Adjust text drawing position since the context is flipped
+                const text = score.toString();
+                ctx.font = '40px Ambit'; // You can change the font size and style as needed
+                ctx.fillStyle = 'white'; // Set the text color
+                const textWidth = ctx.measureText(text).width;
+                const x = -(canvas.width + textWidth) / 2; // Negative because context is flipped
+                const y = 50; // You can adjust the y coordinate as needed
 
-            ctx.fillText(text, x, y); // Draw the centered text
+                ctx.fillText(text, x, y); // Draw the centered text
+
+                ctx.restore(); // Restore the original state of the context
+
         }
 
         main();
