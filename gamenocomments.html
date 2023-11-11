@@ -311,36 +311,7 @@
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(canvas.width, 0);
-            ctx.scale(-1, 1);
-            ctx.fillStyle = 'black';
-            ctx.font = '48px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Your score: ${score}`, canvas.width / 2, canvas.height / 2);
-            ctx.restore();
-            drawStars(ctx, score, canvas);
         }
-
-        function drawStars(ctx, score, canvas) {
-            const stars = calculateStars(score);
-            const fullStar = String.fromCharCode(0x2605);
-            const emptyStar = String.fromCharCode(0x2606);
-
-            ctx.font = '64px Arial';
-            ctx.fillStyle = 'gold';
-            ctx.textAlign = 'center';
-
-            for (let i = 0; i < 3; i++) {
-                ctx.fillText(i < stars ? fullStar : emptyStar, (canvas.width / 2) - 64 + (i * 64), canvas.height / 2 + 100);
-            }
-        }
-
-        function calculateStars(score) {
-            if (score >= 10) return 3;
-            if (score >= 5) return 2;
-            if (score >= 1) return 1;
-            return 0;
-        }
-
         main();
     </script>
 </body>
