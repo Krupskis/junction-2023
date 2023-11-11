@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+    <title>Webcam Game</title>
+    <style>
+        #video-container {
+            height: vh;
+            aspect-ratio: 9/16;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #webcam {
+            position: absolute;
+            display: none;
+            min-width: 100%;
+            min-height: 100%;
+        }
+
+        #canvas {
+            object-fit: cover;
+            background-color: white;
+            border-radius: 10px;
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            -webkit-transform: scaleX(-1);
+            transform: scaleX(-1);
+        }
+
+        .primary-button {
+            display: inline-flex;
+            gap: 2px;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            max-width: 300px;
+            font-family: 'Inter', sans-serif;
+            border-radius: 9999px;
+            font-size: 1rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            background-color: #6941c6;
+            color: white;
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            border: 2px solid transparent;
+        }
+
+        .primary-button:hover {
+            background-color: #53389e;
+        }
+
+        .primary-button:focus-visible {
+            outline: 2px solid #53389e;
+        }
+
+        .primary-button:disabled {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .countdown-container {
+            width: 100%;
+            display: none;
+            width: 450px;
+            max-width: 100%;
+            background-color: #e0e0e0;
+            padding: 3px;
+            box-sizing: border-box;
+            border-radius: 5px;
+        }
+
+        .countdown-bar {
+            height: 20px;
+            background-color: #9e77ed;
+            width: 100%;
+            border-radius: 5px;
+            transition: width 1s linear;
+        }
+    </style>
+</head>
+
+<body style="background-color:#F4F6FA;">
+    <div
+        style="display: flex; height: 100vh; flex-direction: column; justify-content: center; align-items: center; gap: 10px;">
+        <div id="video-container">
+            <video id="webcam" autoplay></video>
+            <canvas id="canvas"></canvas>
+        </div>
+        <div id="countdownContainer" class="countdown-container">
+            <div class="countdown-bar" id="countdown-bar"></div>
+        </div>
+        <div id="endScreen" style="display: none; text-align: center;"></div>
+        <button class="primary-button" id="startButton">Start Game</button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <script>
+        const gameLength = 30;
+        let score = 0;
+        let currentPreset = null;
+        let isChangingPreset = false;
+        let delayActive = false;
+        let gameActive = true;
+        let delay = 1000;
+        let lastPresetIndex = null;
+        let animationFrameId;
+
+        async function setupWebcam() {
+            const video = document.getElementById('webcam');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => {
+                    resolve(video);
+                };
+            });
+        }
+
+        async function loadBodyPix() {
+            return await bodyPix.load();
+        }
+
+        async function main() {
+            const video = await setupWebcam();
+            video.play();
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            const net = await loadBodyPix();
+            document.getElementById('startButton').addEventListener('click', () => {
+                startGame(net, video, canvas, ctx);
+            });
+        }
+
+        function startGame(net, video, canvas, ctx) {
+            document.getElementById('countdownContainer').style.display = 'block';
+            const countdownBar = document.getElementById('countdown-bar');
+            let timeLeft = gameLength;
+            let originalWidth = 100;
+
+            const countdownInterval = setInterval(() => {
+                timeLeft--;
+                let newWidth = (timeLeft / gameLength) * 100;
+                countdownBar.style.width = newWidth + '%';
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownBar.style.width = '0%';
+                    endGame(ctx, score, canvas);
+                }
+            }, 1000);
+
+            document.getElementById('startButton').style.display = 'none';
+            detect(net, video, canvas, ctx);
+        }
+
+        function isOutside(data, rect) {
+            let isOutside = true;
+            let empty = true;
+
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] == 1) {
+                    empty = false;
+                    break;
+                }
+            }
+
+            if (empty) {
+                return false;
+            }
+
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] == 1) {
+                    let x = i % 640;
+                    let y = Math.floor(i / 640);
+
+                    for (let j = 0; j < rect.length; j++) {
+                        let { x: rectX, y: rectY, width: rectWidth, height: rectHeight } = rect[j];
+
+                        if (isInsideRectangle(x, y, rectX, rectY, rectWidth, rectHeight)) {
+                            isOutside = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return isOutside;
+        }
+
+        function isInsideRectangle(x, y, rectX, rectY, rectWidth, rectHeight) {
+            return x >= rectX && x <= rectX + rectWidth && y >= rectY && y < rectY + rectHeight;
+        }
+
+        function getRectangle(video, canvas, ctx) {
+            presets = [
+                [
+                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 4 }
+                ],
+                [
+                    { x: 0, y: canvas.height - canvas.height / 4, width: canvas.width, height: canvas.height / 4 }
+                ],
+                [
+                    { x: 0, y: 0, width: canvas.width / 2, height: canvas.height }
+                ],
+                [
+                    { x: canvas.width / 2, y: 0, width: canvas.width / 2, height: canvas.height }
+                ],
+                [
+                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 },
+                    { x: canvas.width / 2, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 }
+                ],
+                [
+                    { x: 0, y: 0, width: canvas.width, height: canvas.height / 2 },
+                    { x: 0, y: canvas.height / 2, width: canvas.width / 2, height: canvas.height / 2 }
+                ]
+            ]
+
+            let randomIndex;
+            do {
+                randomIndex = Math.floor(Math.random() * presets.length);
+            } while (randomIndex === lastPresetIndex);
+
+            lastPresetIndex = randomIndex;
+            return presets[randomIndex];
+        }
+
+        async function detect(net, video, canvas, ctx) {
+            const segmentation = await net.segmentPerson(video);
+            const coloredPartImage = bodyPix.toColoredPartMask(segmentation);
+
+            const opacity = 0;
+            const maskBlurAmount = 0;
+            const flipHorizontal = false;
+
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            if (!currentPreset) {
+                currentPreset = getRectangle(video, canvas, ctx);
+            }
+
+            ctx.globalAlpha = 0.7;
+            for (let i = 0; i < currentPreset.length; i++) {
+                const { x, y, width, height } = currentPreset[i];
+                ctx.fillStyle = isChangingPreset ? '#98FB98' : '#FF6961';
+                ctx.fillRect(x, y, width, height);
+            }
+
+            ctx.globalAlpha = 1;
+            drawScore(ctx, score, canvas);
+            const outside = isOutside(segmentation.data, currentPreset);
+
+            if (outside) {
+                isChangingPreset = true;
+
+                if (!delayActive) {
+                    delayActive = true;
+                    score++;
+                    setTimeout(() => changePreset(video, canvas, ctx), delay);
+                }
+            }
+
+            if (gameActive) {
+                requestAnimationFrame(() => detect(net, video, canvas, ctx));
+            }
+        }
+
+        function changePreset(video, canvas, ctx) {
+            currentPreset = getRectangle(video, canvas, ctx);
+            isChangingPreset = false;
+            delayActive = false;
+        }
+
+        function drawScore(ctx, score, canvas) {
+            ctx.save();
+            ctx.scale(-1, 1);
+
+            const text = score.toString();
+            ctx.font = '40px Ambit';
+            ctx.fillStyle = 'white';
+            const textWidth = ctx.measureText(text).width;
+            const x = -(canvas.width + textWidth) / 2;
+            const y = 50;
+
+            ctx.fillText(text, x, y);
+
+            ctx.restore();
+        }
+
+        function endGame(ctx, score, canvas) {
+            gameActive = false;
+            canvas.style.display = 'block';
+            setTimeout(() => {
+                showEndScreen(ctx, score, canvas);
+            }, 100);
+        }
+
+        function showEndScreen(ctx, score, canvas) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.fillStyle = '#F4F6FA';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.fillStyle = 'black';
+            ctx.font = '48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Your score: ${score}`, canvas.width / 2, canvas.height / 2);
+            ctx.restore();
+            drawStars(ctx, score, canvas);
+        }
+
+        function drawStars(ctx, score, canvas) {
+            const stars = calculateStars(score);
+            const fullStar = String.fromCharCode(0x2605);
+            const emptyStar = String.fromCharCode(0x2606);
+
+            ctx.font = '64px Arial';
+            ctx.fillStyle = 'gold';
+            ctx.textAlign = 'center';
+
+            for (let i = 0; i < 3; i++) {
+                ctx.fillText(i < stars ? fullStar : emptyStar, (canvas.width / 2) - 64 + (i * 64), canvas.height / 2 + 100);
+            }
+        }
+
+        function calculateStars(score) {
+            if (score >= 10) return 3;
+            if (score >= 5) return 2;
+            if (score >= 1) return 1;
+            return 0;
+        }
+
+        main();
+    </script>
+</body>
+
+</html>
